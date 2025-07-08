@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   title: "make shit make sense",
   description: "LLM + Algorithms for Natural Language Data Analytics",
   themeColor: "#000000",
-  viewport: "width=device-width, initial-scale=1, viewport-fit=cover",
+  viewport: "width=device-width, initial-scale=1.0, viewport-fit=cover",
   other: {
     "apple-mobile-web-app-status-bar-style": "black-translucent",
     "msapplication-navbutton-color": "#000000",
