@@ -62,7 +62,7 @@ export default function CostEstimator() {
   return (
 		<div className="space-y-12">
 			{/* Use Case Chips */}
-			<div className="flex flex-wrap justify-center gap-x-8 gap-y-4">
+			<div className="flex gap-3 justify-start overflow-x-auto scrollbar-hide pb-2 md:overflow-x-visible md:flex-wrap md:justify-center">
 				{Object.keys(useCases).map((useCase) => (
 					<button
 						key={useCase}
@@ -71,10 +71,10 @@ export default function CostEstimator() {
 								useCase as UseCaseKey
 							)
 						}
-						className={`text-sm transition-colors cursor-pointer ${
+						className={`px-3 py-1 text-xs rounded-full border transition-all cursor-pointer whitespace-nowrap flex-shrink-0 ${
 							selectedUseCase === useCase
-								? "text-white"
-								: "text-gray-500 hover:text-gray-300"
+								? "bg-white/10 text-white border-transparent"
+								: "border-white/20 text-gray-400 hover:border-white/30 hover:text-gray-300"
 						}`}
 					>
 						{useCase}
@@ -111,14 +111,14 @@ export default function CostEstimator() {
 			</div>
 
 			{/* Model Selection */}
-			<div className="flex flex-wrap gap-2 justify-center">
+			<div className="flex gap-3 justify-start overflow-x-auto scrollbar-hide pb-2 md:overflow-x-visible md:flex-wrap md:justify-center">
 				{Object.entries(models).map(([modelKey, model]) => (
 					<button
 						key={modelKey}
 						onClick={() =>
 							setSelectedModel(modelKey as keyof typeof models)
 						}
-						className={`px-3 py-2 text-xs border rounded transition-colors cursor-pointer ${
+						className={`px-3 py-2 text-xs border rounded transition-colors cursor-pointer whitespace-nowrap flex-shrink-0 ${
 							selectedModel === modelKey
 								? "border-white/15 bg-white/5 text-gray-300"
 								: "border-white/10 text-gray-500 hover:text-gray-400 hover:border-white/15"

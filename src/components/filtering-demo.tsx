@@ -67,15 +67,10 @@ export default function FilteringDemo() {
     setIsLoading(false)
   }
 
-  const truncateText = (text: string, maxLength: number = 120) => {
-    if (text.length <= maxLength) return text
-    return text.slice(0, maxLength) + "..."
-  }
-
   return (
     <div className="space-y-6">
       {/* Use Case Chips */}
-      <div className="flex flex-wrap justify-center gap-x-8 gap-y-4">
+      <div className="flex gap-3 justify-start overflow-x-auto scrollbar-hide pb-2 md:flex-wrap md:justify-center">
         {Object.keys(useCases).map((useCase) => (
           <button
             key={useCase}
@@ -85,10 +80,10 @@ export default function FilteringDemo() {
               setFilteredResults([])
               setExpandedItems(new Set())
             }}
-            className={`text-sm transition-colors cursor-pointer ${
+            className={`px-3 py-1 text-xs rounded-full border transition-all cursor-pointer whitespace-nowrap flex-shrink-0 ${
               selectedUseCase === useCase
-                ? 'text-white'
-                : 'text-gray-500 hover:text-gray-300'
+                ? 'bg-white/10 text-white border-transparent'
+                : 'border-white/20 text-gray-400 hover:border-white/30 hover:text-gray-300'
             }`}
           >
             {useCase}
@@ -99,43 +94,50 @@ export default function FilteringDemo() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left Panel - Filtering Prompt */}
         <div className="space-y-4">
-          <div className="relative bg-gray-900/50 border border-white/10 rounded focus-within:border-white/15 transition-colors">
-            <textarea
-              value={filterPrompt}
-              onChange={(e) => setFilterPrompt(e.target.value)}
-              placeholder="Enter filtering criteria..."
-              className="w-full h-20 px-3 py-2 pr-12 bg-transparent border-0 text-white placeholder-gray-400 resize-none focus:outline-none"
-            />
-            <div className="flex flex-wrap gap-2 px-3 pb-3">
-              {currentData.suggestions.map((suggestion) => (
+          <div className="bg-gray-900/50 border border-white/10 rounded focus-within:border-white/15 transition-colors">
+            <div className="flex">
+              <div className="flex-1">
+                <textarea
+                  value={filterPrompt}
+                  onChange={(e) => setFilterPrompt(e.target.value)}
+                  placeholder="Enter filtering criteria..."
+                  className="w-full h-20 px-3 py-2 bg-transparent border-0 text-white placeholder-gray-400 resize-none focus:outline-none"
+                />
+                <div className="flex flex-wrap gap-2 px-3 pb-3">
+                  {currentData.suggestions.map((suggestion) => (
+                    <button
+                      key={suggestion}
+                      onClick={() => handleSuggestionClick(suggestion)}
+                      className="px-2 py-1 text-xs text-gray-400 bg-gray-800/50 rounded hover:text-white hover:bg-gray-700/50 transition-colors cursor-pointer"
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="flex flex-col justify-end p-3">
                 <button
-                  key={suggestion}
-                  onClick={() => handleSuggestionClick(suggestion)}
-                  className="px-2 py-1 text-xs text-gray-400 bg-gray-800/50 rounded hover:text-white hover:bg-gray-700/50 transition-colors cursor-pointer"
+                  onClick={runFilter}
+                  disabled={!filterPrompt.trim() || isLoading}
+                  className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
                 >
-                  {suggestion}
+                  {isLoading ? (
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  ) : (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="text-white">
+                      <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46"/>
+                    </svg>
+                  )}
                 </button>
-              ))}
+              </div>
             </div>
-            <button
-              onClick={runFilter}
-              disabled={!filterPrompt.trim() || isLoading}
-              className="absolute bottom-2 right-2 w-8 h-8 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
-            >
-              {isLoading ? (
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-              ) : (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" className="text-white">
-                  <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46"/>
-                </svg>
-              )}
-            </button>
           </div>
         </div>
 
         {/* Right Panel - Items */}
         <div className="space-y-3">
-          <div className="space-y-2 max-h-96 overflow-y-auto">
+          <div className="space-y-2">
             {currentData.items.map((item, index) => {
               const isExpanded = expandedItems.has(index)
               const isHighlighted = filteredResults[index] === true
@@ -151,12 +153,12 @@ export default function FilteringDemo() {
                   } ${isProcessing ? 'animate-pulse' : ''}`}
                 >
                   <p 
-                    className="text-sm cursor-pointer text-gray-300"
+                    className={`text-sm text-gray-300 cursor-pointer ${!isExpanded ? 'line-clamp-2' : ''}`}
                     onClick={() => toggleExpanded(index)}
                   >
-                    {isExpanded ? item : truncateText(item)}
+                    {item}
                   </p>
-                  {!isExpanded && item.length > 120 && (
+                  {!isExpanded && item.length > 80 && (
                     <button
                       onClick={() => toggleExpanded(index)}
                       className="text-xs text-gray-500 hover:text-gray-400 mt-1 cursor-pointer"
