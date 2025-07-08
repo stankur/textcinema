@@ -36,7 +36,7 @@ export default function RootLayout({
         <meta name="msapplication-navbutton-color" content="#000000" />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased flex flex-col min-h-screen`}
       >
         {children}
       </body>

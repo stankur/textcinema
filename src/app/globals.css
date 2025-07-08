@@ -71,23 +71,10 @@
 }
 
 
-html, body {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  background: black;
-  overflow-x: hidden;
-}
-
 body {
-  background: hsl(var(--background));
+  background: black;
   color: hsl(var(--foreground));
   font-family: system-ui, -apple-system, sans-serif;
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-  min-height: 100dvh; /* Dynamic viewport height for mobile */
-  padding-bottom: env(safe-area-inset-bottom);
 }
 
 .line-clamp-2 {
