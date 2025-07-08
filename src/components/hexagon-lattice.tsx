@@ -82,14 +82,14 @@ export default function HexagonLattice({
       
       setTimeout(() => {
         setAnimationPhase('filtered')
-      }, 2300)
+      }, 3500)
       
       // End progress bar before returning to thumbnail
       setTimeout(() => {
         setShowProgress(false)
         setAnimationPhase('selected')
         setIsAnimating(false)
-      }, 3700)
+      }, 4700)
     }
   }
   const generateHexLattice = () => {
@@ -131,7 +131,7 @@ export default function HexagonLattice({
         strokeDashoffset="200"
         opacity={showProgress ? 1 : 0}
         style={{
-          transition: showProgress ? 'stroke-dashoffset 3.1s linear, opacity 0.3s ease' : 'opacity 0.3s ease',
+          transition: showProgress ? 'stroke-dashoffset 4.1s linear, opacity 0.3s ease' : 'opacity 0.3s ease',
           strokeDashoffset: showProgress ? "0" : "200"
         }}
       />

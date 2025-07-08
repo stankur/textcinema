@@ -15,7 +15,7 @@ export default function Article() {
         </Link>
         
         <h1 className="text-4xl font-bold mb-12">
-          LLM for making complex information make sense
+          LLM + Algorithms for Natural Language Data Analytics
         </h1>
         
         <section className="mb-16">

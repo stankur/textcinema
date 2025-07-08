@@ -9,7 +9,7 @@ export default function Home() {
         </h1>
         <Link 
           href="/blog" 
-          className="inline-block px-6 py-3 bg-white text-black rounded-lg hover:bg-gray-200 transition-colors"
+          className="text-sm transition-colors cursor-pointer text-gray-500 hover:text-gray-300"
         >
           Blog
         </Link>

@@ -14,15 +14,12 @@ export default function Blog() {
         <h1 className="text-4xl font-bold mb-12">Blog</h1>
         
         <div className="space-y-8">
-          <article className="border-b border-gray-800 pb-8">
+          <article>
             <Link href="/blog/llm-for-making-complex-information-make-sense">
-              <h2 className="text-2xl font-semibold mb-4 hover:text-gray-300 cursor-pointer">
-                LLM for making complex information make sense
+              <h2 className="text-2xl font-semibold hover:text-gray-300 cursor-pointer">
+                LLM + Algorithms for Natural Language Data Analytics
               </h2>
             </Link>
-            <p className="text-gray-400 text-sm mb-4">
-              Coming soon...
-            </p>
           </article>
         </div>
       </div>

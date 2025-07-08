@@ -1,67 +1,10 @@
 "use client"
 
 import { useState } from "react"
-
-const useCases = {
-  "youtube transcripts": {
-    items: [
-      "Hey everyone, welcome to my channel. Today I'm going to show you how to build a startup from scratch. The first thing you need to understand is product-market fit...",
-      "In this video, I'll walk through the React useEffect hook and how to avoid infinite loops. Let's start with a basic example of fetching data...",
-      "As a product manager, your main job is to bridge the gap between engineering and business. You need to understand both the technical constraints and the business goals...",
-      "So I was debugging this memory leak in our Node.js application and found that we weren't properly cleaning up event listeners. Here's how I fixed it...",
-      "Today we're going to talk about go-to-market strategy for B2B SaaS products. The key is to identify your ideal customer profile first..."
-    ],
-    suggestions: [
-      "startup founders",
-      "engineers", 
-      "product managers"
-    ]
-  },
-  "email inbox": {
-    items: [
-      "Hi John, thanks for reaching out about the partnership opportunity. I'd love to schedule a call next week to discuss this further. Best regards, Sarah",
-      "🎉 FLASH SALE! 50% off all premium courses this weekend only! Use code SAVE50 at checkout. Limited time offer!",
-      "Your account has been compromised. Click here immediately to verify your identity and secure your account. Urgent action required!",
-      "Meeting reminder: Weekly standup tomorrow at 10 AM PST. Please prepare your updates on the current sprint progress.",
-      "Re: Budget approval for Q1 marketing campaign. I've reviewed the proposal and have a few questions about the attribution model..."
-    ],
-    suggestions: [
-      "need a reply",
-      "advertisement",
-      "likely spam"
-    ]
-  },
-  "recipe list": {
-    items: [
-      "Grilled Salmon with Quinoa - Fresh Atlantic salmon seasoned with herbs, served with fluffy quinoa and steamed vegetables",
-      "Classic Margherita Pizza - Wood-fired pizza with fresh mozzarella, basil, and San Marzano tomatoes on house-made dough",
-      "Kung Pao Tofu - Crispy tofu cubes tossed in a spicy Sichuan sauce with peanuts, vegetables, and dried chilies",
-      "Mediterranean Chickpea Salad - Protein-rich chickpeas with cucumber, tomatoes, red onion, and tahini dressing",
-      "Beef and Broccoli Stir-fry - Tender beef strips with fresh broccoli in a savory garlic-ginger sauce over jasmine rice"
-    ],
-    suggestions: [
-      "vegan",
-      "pescatarian", 
-      "Chinese food"
-    ]
-  },
-  "customer feedback": {
-    items: [
-      "The mobile app keeps crashing when I try to upload photos. This has been happening for the past week and it's really frustrating.",
-      "I love the new dashboard design! It would be awesome if you could add a dark mode option though. The bright white background strains my eyes during long work sessions.",
-      "Your customer service team was incredibly helpful when I had billing questions. They resolved everything quickly and professionally.",
-      "The search functionality is too slow. Sometimes it takes 10+ seconds to find what I'm looking for, which really hurts productivity.",
-      "Could you please add keyboard shortcuts for common actions? As a power user, I'd love to navigate the app without always reaching for the mouse."
-    ],
-    suggestions: [
-      "feature request",
-      "bug"
-    ]
-  }
-}
+import { useCases, type UseCaseKey } from "@/data/use-cases"
 
 export default function FilteringDemo() {
-  const [selectedUseCase, setSelectedUseCase] = useState<keyof typeof useCases>("youtube transcripts")
+  const [selectedUseCase, setSelectedUseCase] = useState<UseCaseKey>("youtube transcripts")
   const [filterPrompt, setFilterPrompt] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [filteredResults, setFilteredResults] = useState<boolean[]>([])
@@ -70,7 +13,10 @@ export default function FilteringDemo() {
   const currentData = useCases[selectedUseCase]
 
   const handleSuggestionClick = (suggestion: string) => {
-    setFilterPrompt(`Is this ${suggestion}?`)
+    const suggestionIndex = currentData.suggestions.indexOf(suggestion)
+    if (suggestionIndex !== -1 && currentData.prompts) {
+      setFilterPrompt(currentData.prompts[suggestionIndex])
+    }
   }
 
   const toggleExpanded = (index: number) => {
@@ -89,14 +35,33 @@ export default function FilteringDemo() {
     setIsLoading(true)
     setFilteredResults([])
     
-    // Simulate API calls with realistic delays
     const results: boolean[] = []
+    
     for (let i = 0; i < currentData.items.length; i++) {
-      await new Promise(resolve => setTimeout(resolve, 500))
-      // Simulate LLM response (in real app, this would call OpenAI)
-      const mockResult = Math.random() > 0.6 // Random for demo
-      results.push(mockResult)
+      try {
+        const response = await fetch('/api/filter', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            prompt: filterPrompt,
+            content: currentData.items[i]
+          })
+        })
+        
+        const data = await response.json()
+        const result = data.result?.toLowerCase().includes('yes') || false
+        results.push(result)
+      } catch (error) {
+        console.error('Filter API error:', error)
+        // Fallback to random result on error
+        results.push(Math.random() > 0.6)
+      }
+      
       setFilteredResults([...results])
+      // Small delay for visual effect
+      await new Promise(resolve => setTimeout(resolve, 200))
     }
     
     setIsLoading(false)
@@ -110,17 +75,17 @@ export default function FilteringDemo() {
   return (
     <div className="space-y-6">
       {/* Use Case Chips */}
-      <div className="flex justify-center gap-8">
+      <div className="flex flex-wrap justify-center gap-x-8 gap-y-4">
         {Object.keys(useCases).map((useCase) => (
           <button
             key={useCase}
             onClick={() => {
-              setSelectedUseCase(useCase as keyof typeof useCases)
+              setSelectedUseCase(useCase as UseCaseKey)
               setFilterPrompt("")
               setFilteredResults([])
               setExpandedItems(new Set())
             }}
-            className={`text-sm transition-colors ${
+            className={`text-sm transition-colors cursor-pointer ${
               selectedUseCase === useCase
                 ? 'text-white'
                 : 'text-gray-500 hover:text-gray-300'
@@ -134,17 +99,28 @@ export default function FilteringDemo() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left Panel - Filtering Prompt */}
         <div className="space-y-4">
-          <div className="relative">
+          <div className="relative bg-gray-900/50 border border-white/10 rounded focus-within:border-white/15 transition-colors">
             <textarea
               value={filterPrompt}
               onChange={(e) => setFilterPrompt(e.target.value)}
               placeholder="Enter filtering criteria..."
-              className="w-full h-32 px-3 py-2 pr-12 bg-gray-900/50 border border-gray-700 rounded text-white placeholder-gray-400 resize-none focus:outline-none focus:border-gray-600"
+              className="w-full h-20 px-3 py-2 pr-12 bg-transparent border-0 text-white placeholder-gray-400 resize-none focus:outline-none"
             />
+            <div className="flex flex-wrap gap-2 px-3 pb-3">
+              {currentData.suggestions.map((suggestion) => (
+                <button
+                  key={suggestion}
+                  onClick={() => handleSuggestionClick(suggestion)}
+                  className="px-2 py-1 text-xs text-gray-400 bg-gray-800/50 rounded hover:text-white hover:bg-gray-700/50 transition-colors cursor-pointer"
+                >
+                  {suggestion}
+                </button>
+              ))}
+            </div>
             <button
               onClick={runFilter}
               disabled={!filterPrompt.trim() || isLoading}
-              className="absolute bottom-2 right-2 w-8 h-8 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="absolute bottom-2 right-2 w-8 h-8 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
             >
               {isLoading ? (
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
@@ -154,18 +130,6 @@ export default function FilteringDemo() {
                 </svg>
               )}
             </button>
-          </div>
-          
-          <div className="flex flex-wrap gap-2">
-            {currentData.suggestions.map((suggestion) => (
-              <button
-                key={suggestion}
-                onClick={() => handleSuggestionClick(suggestion)}
-                className="px-2 py-1 text-xs text-gray-400 border border-gray-600 rounded hover:text-white hover:border-gray-500 transition-colors"
-              >
-                {suggestion}
-              </button>
-            ))}
           </div>
         </div>
 
@@ -182,8 +146,8 @@ export default function FilteringDemo() {
                   key={index}
                   className={`p-3 border rounded transition-all ${
                     isHighlighted 
-                      ? 'border-green-600 bg-green-500/10' 
-                      : 'border-gray-800 bg-transparent'
+                      ? 'border-green-600/60 bg-green-500/10' 
+                      : 'border-white/10 bg-transparent'
                   } ${isProcessing ? 'animate-pulse' : ''}`}
                 >
                   <p 
@@ -195,7 +159,7 @@ export default function FilteringDemo() {
                   {!isExpanded && item.length > 120 && (
                     <button
                       onClick={() => toggleExpanded(index)}
-                      className="text-xs text-gray-500 hover:text-gray-400 mt-1"
+                      className="text-xs text-gray-500 hover:text-gray-400 mt-1 cursor-pointer"
                     >
                       Show more
                     </button>
@@ -203,7 +167,7 @@ export default function FilteringDemo() {
                   {isExpanded && (
                     <button
                       onClick={() => toggleExpanded(index)}
-                      className="text-xs text-gray-500 hover:text-gray-400 mt-1"
+                      className="text-xs text-gray-500 hover:text-gray-400 mt-1 cursor-pointer"
                     >
                       Show less
                     </button>

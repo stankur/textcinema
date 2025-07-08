@@ -23,7 +23,7 @@ export default function FilteringPage() {
         
         <div className="max-w-none space-y-8">
           <section>
-            <h2 className="text-2xl font-bold mb-4">Introduction</h2>
+            <h2 className="text-2xl font-bold mb-8">Introduction</h2>
             <div className="space-y-4 text-gray-300">
               <p>
                 Filtering is a common process we do when we are organizing information. We have a large set of items and we want to take only those that fit some criteria.
@@ -38,12 +38,14 @@ export default function FilteringPage() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold mb-6">Demo</h2>
-            <FilteringDemo />
+            <h2 className="text-2xl font-bold mb-10">Demo</h2>
+            <div className="my-20">
+              <FilteringDemo />
+            </div>
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold mb-6">Estimating costs</h2>
+            <h2 className="text-2xl font-bold mb-10">Estimating costs</h2>
             <div className="space-y-4 text-gray-300 mb-6">
               <p>
                 LLM based operations are indeterministic and often hard to estimate for costs. However, it is very easy to estimate costs for filtering.
@@ -53,11 +55,13 @@ export default function FilteringPage() {
               </p>
               <p>For the demo above, here are the costs.</p>
             </div>
-            <CostEstimator />
+            <div className="my-20">
+              <CostEstimator />
+            </div>
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold mb-4">Quality assurance</h2>
+            <h2 className="text-2xl font-bold mb-8">Quality assurance</h2>
             <div className="space-y-4 text-gray-300">
               <p>
                 LLMs are nondeterministic, and the major concerns for using it for filtering are inconsistencies and inaccuracy. This is especially true for filters which are subjective, or complex.
@@ -69,7 +73,7 @@ export default function FilteringPage() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold mb-4">Preventing overfit</h2>
+            <h2 className="text-2xl font-bold mb-8">Preventing overfit</h2>
             <div className="space-y-4 text-gray-300">
               <p>
                 Concerns for the small dataset for prompt iteration is overfitting. This likely stems from training classical ML models, where we update weights algorithmically, with no human judgement.
