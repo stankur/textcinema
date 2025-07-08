@@ -38,7 +38,6 @@ export default function FilteringPage() {
           </section>
 
           <section>
-            <h2 className="text-2xl font-bold mb-10">Demo</h2>
             <div className="my-20">
               <FilteringDemo />
             </div>

@@ -35,33 +35,45 @@ export default function FilteringDemo() {
     setIsLoading(true)
     setFilteredResults([])
     
-    const results: boolean[] = []
-    
-    for (let i = 0; i < currentData.items.length; i++) {
-      try {
-        const response = await fetch('/api/filter', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            prompt: filterPrompt,
-            content: currentData.items[i]
+    try {
+      // Create all API calls in parallel
+      const promises = currentData.items.map(async (item, index) => {
+        try {
+          const response = await fetch('/api/filter', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              prompt: filterPrompt,
+              content: item
+            })
           })
-        })
-        
-        const data = await response.json()
-        const result = data.result?.toLowerCase().includes('yes') || false
-        results.push(result)
-      } catch (error) {
-        console.error('Filter API error:', error)
-        // Fallback to random result on error
-        results.push(Math.random() > 0.6)
-      }
+          
+          const data = await response.json()
+          const result = data.result?.toLowerCase().includes('yes') || false
+          return { index, result }
+        } catch (error) {
+          console.error('Filter API error:', error)
+          // Fallback to random result on error
+          return { index, result: Math.random() > 0.6 }
+        }
+      })
       
-      setFilteredResults([...results])
-      // Small delay for visual effect
-      await new Promise(resolve => setTimeout(resolve, 200))
+      // Wait for all promises to complete
+      const responses = await Promise.all(promises)
+      
+      // Sort by index to maintain order and extract results
+      const results = responses
+        .sort((a, b) => a.index - b.index)
+        .map(r => r.result)
+      
+      setFilteredResults(results)
+    } catch (error) {
+      console.error('Filtering failed:', error)
+      // Fallback to random results
+      const fallbackResults = currentData.items.map(() => Math.random() > 0.6)
+      setFilteredResults(fallbackResults)
     }
     
     setIsLoading(false)
@@ -149,7 +161,7 @@ export default function FilteringDemo() {
                   className={`p-3 border rounded transition-all ${
                     isHighlighted 
                       ? 'border-green-600/60 bg-green-500/10' 
-                      : 'border-white/10 bg-transparent'
+                      : 'border-white/10 bg-gray-700/40'
                   } ${isProcessing ? 'animate-pulse' : ''}`}
                 >
                   <p 

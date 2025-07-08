@@ -60,16 +60,14 @@ export default function CostEstimator() {
   }, [customPrompt, currentData, currentModel])
 
   return (
-		<div className="space-y-12">
+		<div className="space-y-6">
 			{/* Use Case Chips */}
 			<div className="flex gap-3 justify-start overflow-x-auto scrollbar-hide pb-2 md:overflow-x-visible md:flex-wrap md:justify-center">
 				{Object.keys(useCases).map((useCase) => (
 					<button
 						key={useCase}
 						onClick={() =>
-							setSelectedUseCase(
-								useCase as UseCaseKey
-							)
+							setSelectedUseCase(useCase as UseCaseKey)
 						}
 						className={`px-3 py-1 text-xs rounded-full border transition-all cursor-pointer whitespace-nowrap flex-shrink-0 ${
 							selectedUseCase === useCase
@@ -80,11 +78,6 @@ export default function CostEstimator() {
 						{useCase}
 					</button>
 				))}
-			</div>
-
-			{/* Use Case Info */}
-			<div className="text-center text-gray-400 text-sm">
-				{currentData.itemCount} items ({currentData.avgTokensPerItem} average tokens)
 			</div>
 
 			{/* Custom Prompt */}
@@ -100,7 +93,9 @@ export default function CostEstimator() {
 						{currentData.suggestions.map((suggestion) => (
 							<button
 								key={suggestion}
-								onClick={() => handleSuggestionClick(suggestion)}
+								onClick={() =>
+									handleSuggestionClick(suggestion)
+								}
 								className="px-2 py-1 text-xs text-gray-400 bg-gray-800/50 rounded hover:text-white hover:bg-gray-700/50 transition-colors cursor-pointer"
 							>
 								{suggestion}
@@ -111,7 +106,7 @@ export default function CostEstimator() {
 			</div>
 
 			{/* Model Selection */}
-			<div className="flex gap-3 justify-start overflow-x-auto scrollbar-hide pb-2 md:overflow-x-visible md:flex-wrap md:justify-center">
+			<div className="flex gap-3 justify-start overflow-x-auto scrollbar-hide pb-8 md:overflow-x-visible md:flex-wrap md:justify-center">
 				{Object.entries(models).map(([modelKey, model]) => (
 					<button
 						key={modelKey}
@@ -134,46 +129,49 @@ export default function CostEstimator() {
 				))}
 			</div>
 
-			{/* Variables */}
-			<div className="flex flex-wrap gap-x-8 gap-y-4 text-xs justify-center text-gray-300" >
-				<div >
-					<InlineMath
-						math={`\\text{items} = ${currentData.itemCount}`}
-					/>
+			{/* Calculation Container */}
+			<div className="bg-gray-700/30 mx-auto max-w-2xl border border-white/10 rounded-lg p-8 space-y-8">
+				{/* Variables */}
+				<div className="flex flex-wrap gap-x-8 gap-y-4 text-xs justify-center text-gray-500">
+					<div>
+						<InlineMath
+							math={`\\text{items} = ${currentData.itemCount}`}
+						/>
+					</div>
+					<div>
+						<InlineMath
+							math={`\\text{prompt\\_tokens} = ${estimatedCost.promptTokens}`}
+						/>
+					</div>
+					<div>
+						<InlineMath
+							math={`\\text{avg\\_tokens} = ${currentData.avgTokensPerItem}`}
+						/>
+					</div>
+					<div>
+						<InlineMath
+							math={`\\text{input\\_cost} = \\$${currentModel.inputCost}/1M`}
+						/>
+					</div>
+					<div>
+						<InlineMath
+							math={`\\text{output\\_cost} = \\$${currentModel.outputCost}/1M`}
+						/>
+					</div>
 				</div>
-				<div >
-					<InlineMath
-						math={`\\text{prompt\\_tokens} = ${estimatedCost.promptTokens}`}
-					/>
-				</div>
-				<div >
-					<InlineMath
-						math={`\\text{avg\\_tokens} = ${currentData.avgTokensPerItem}`}
-					/>
-				</div>
-				<div >
-					<InlineMath
-						math={`\\text{input\\_cost} = \\$${currentModel.inputCost}/1M`}
-					/>
-				</div>
-				<div>
-					<InlineMath
-						math={`\\text{output\\_cost} = \\$${currentModel.outputCost}/1M`}
-					/>
-				</div>
-			</div>
 
-			{/* Formula */}
-			<div className="text-center space-y-6 text-sm">
-				<div className="text-gray-300">
-					<InlineMath math="\text{max cost} = \text{items} \times (\text{input\_cost} \times (\text{prompt\_tokens} + \text{avg\_tokens}) + \text{output\_cost})" />
-				</div>
-				<div className="text-gray-300 text-base">
-					<InlineMath
-						math={`\\text{max cost} = \\$${estimatedCost.total.toFixed(
-							6
-						)}`}
-					/>
+				{/* Formula */}
+				<div className="text-center space-y-8 text-xs border-t border-white/5 pt-6 text-gray-500">
+					<div>
+						<InlineMath math="\text{max cost} = \text{items} \times (\text{input\_cost} \times (\text{prompt\_tokens} + \text{avg\_tokens}) + \text{output\_cost})" />
+					</div>
+					<div >
+						<InlineMath
+							math={`\\text{max cost} = \\$${estimatedCost.total.toFixed(
+								6
+							)}`}
+						/>
+					</div>
 				</div>
 			</div>
 		</div>
