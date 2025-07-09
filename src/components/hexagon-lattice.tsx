@@ -75,7 +75,7 @@ export default function HexagonLattice({
   }, [rowCounts])
 
   const generateLinearOpacities = useMemo(() => {
-    return Array.from({ length: generateHexLattice.length }, (_, i) => (i + 1) / generateHexLattice.length)
+    return Array.from({ length: generateHexLattice.length }, (_, i) => (i + 1) / (generateHexLattice.length))
   }, [generateHexLattice])
 
   const generateArrangedOpacities = useMemo(() => {
@@ -121,26 +121,29 @@ export default function HexagonLattice({
           setIsInitialClick(false);
         }, 600)
         
+        let shuffledOpacitiesRef: number[]
+        
         setTimeout(() => {
           // Create shuffled uniform percentages from 0% to 100%
-          const shuffledOpacities = [...generateLinearOpacities].sort(() => Math.random() - 0.5)
-          setDotOpacities(shuffledOpacities)
-          
-          // Also shuffle positions so dots start in random locations
-          const shuffledPositions = [...generateHexLattice].sort(() => Math.random() - 0.5)
-          setDotPositions(shuffledPositions)
+          shuffledOpacitiesRef = [...generateLinearOpacities].sort(() => Math.random() - 0.5)
+          setDotOpacities(shuffledOpacitiesRef)
         }, 1500)
         
         setTimeout(() => {
-          // Sort dots by their opacity and rearrange positions accordingly
-          const sortedByOpacity = dotOpacities
-            .map((opacity, index) => ({ opacity, originalIndex: index }))
-            .sort((a, b) => a.opacity - b.opacity)
+          // Create mapping: index -> hexLatticePosition
+          const indexToHexPosition = generateHexLattice
           
-          // Create new sorted opacities and positions arrays
-          const newOpacities = sortedByOpacity.map(item => item.opacity)
-          setDotOpacities(newOpacities)
-          setDotPositions(generateHexLattice)
+          // Create mapping: opacityIndex -> sortedOpacityIndex using the stored shuffled values
+          const opacityWithIndex = shuffledOpacitiesRef.map((opacity, index) => ({ opacity, index }))
+          opacityWithIndex.sort((a, b) => a.opacity - b.opacity)
+          
+          // Create new positions: opacityIndex -> sortedOpacityIndex -> hexLatticePosition
+          const newPositions = shuffledOpacitiesRef.map((_, dotIndex) => {
+            const sortedIndex = opacityWithIndex.findIndex(item => item.index === dotIndex)
+            return indexToHexPosition[sortedIndex]
+          })
+          
+          setDotPositions(newPositions)
           setAnimationPhase('ordering-arranged')
         }, 3000)
         
