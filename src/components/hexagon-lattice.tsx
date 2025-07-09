@@ -10,6 +10,7 @@ interface HexagonLatticeProps {
   circleRadius?: number
   strokeWidth?: number
   animateFilter?: boolean
+  animateOrdering?: boolean
   onClick?: () => void
 }
 
@@ -21,78 +22,18 @@ export default function HexagonLattice({
   circleRadius = 6,
   strokeWidth = 0.5,
   animateFilter = false,
+  animateOrdering = false,
   onClick
 }: HexagonLatticeProps) {
   const [selectedDots, setSelectedDots] = useState<Set<number>>(new Set())
-  const [animationPhase, setAnimationPhase] = useState<'initial' | 'selected' | 'filtered' | 'reset' | 'fadeOut' | 'fadeIn'>('selected')
+  const [animationPhase, setAnimationPhase] = useState<'initial' | 'selected' | 'filtered' | 'reset' | 'fadeOut' | 'fadeIn' | 'ordering-random' | 'ordering-arranged'>('selected')
   const [isAnimating, setIsAnimating] = useState(false)
   const [showProgress, setShowProgress] = useState(false)
+  const [dotPositions, setDotPositions] = useState<Array<{ x: number; y: number }>>([])
+  const [dotOpacities, setDotOpacities] = useState<number[]>([])
+  const [dotIndices, setDotIndices] = useState<number[]>([])
 
-  const centerHexagonDots = useMemo(() => {
-    // Select center hexagon with sides of 2 dots
-    const selected = new Set<number>()
-    
-    let dotIndex = 0
-    rowCounts.forEach((count, rowIndex) => {
-       if (rowIndex === 2) { // Row with 6 dots - select middle 4
-        selected.add(dotIndex + 2) // 3rd dot
-        selected.add(dotIndex + 3) // 4th dot
-      } else if (rowIndex === 3) { // Row with 7 dots - select middle 5
-        selected.add(dotIndex + 2) // 3rd dot
-        selected.add(dotIndex + 3) // 4th dot (center)
-        selected.add(dotIndex + 4) // 5th dot
-      } else if (rowIndex === 4) { // Row with 6 dots - select middle 4
-        selected.add(dotIndex + 2) // 3rd dot
-        selected.add(dotIndex + 3) // 4th dot
-      }
-      dotIndex += count
-    })
-    
-    return selected
-  }, [rowCounts])
-
-  useEffect(() => {
-    // Set up thumbnail state - mid scene (white center, hollow outer)
-    setSelectedDots(centerHexagonDots)
-    setAnimationPhase('selected')
-  }, []) // Run only once on mount
-
-  const handleClick = () => {
-    if (onClick) onClick()
-    
-    if (!isAnimating) {
-      setIsAnimating(true)
-      
-      // Play animation: fadeOut -> fadeIn -> initial -> selected -> filtered -> selected
-      setAnimationPhase('fadeOut')
-      
-      setTimeout(() => {
-        setAnimationPhase('fadeIn')
-      }, 300)
-      
-      // Start progress bar after fade in
-      setTimeout(() => {
-        setAnimationPhase('initial')
-        setShowProgress(true)
-      }, 600)
-      
-      setTimeout(() => {
-        setAnimationPhase('selected')
-      }, 1500)
-      
-      setTimeout(() => {
-        setAnimationPhase('filtered')
-      }, 3500)
-      
-      // End progress bar before returning to thumbnail
-      setTimeout(() => {
-        setShowProgress(false)
-        setAnimationPhase('selected')
-        setIsAnimating(false)
-      }, 4700)
-    }
-  }
-  const generateHexLattice = () => {
+  const generateHexLattice = useMemo(() => {
     const dots: Array<{ x: number; y: number }> = []
     const rowHeight = spacing * Math.sqrt(3) / 2
     const centerX = width / 2
@@ -109,6 +50,131 @@ export default function HexagonLattice({
     })
     
     return dots
+  }, [width, height, spacing, rowCounts])
+
+  const centerHexagonDots = useMemo(() => {
+    const selected = new Set<number>()
+    
+    let dotIndex = 0
+    rowCounts.forEach((count, rowIndex) => {
+      if (rowIndex === 2) {
+        selected.add(dotIndex + 2)
+        selected.add(dotIndex + 3)
+      } else if (rowIndex === 3) {
+        selected.add(dotIndex + 2)
+        selected.add(dotIndex + 3)
+        selected.add(dotIndex + 4)
+      } else if (rowIndex === 4) {
+        selected.add(dotIndex + 2)
+        selected.add(dotIndex + 3)
+      }
+      dotIndex += count
+    })
+    
+    return selected
+  }, [rowCounts])
+
+  const generateLinearOpacities = useMemo(() => {
+    return Array.from({ length: generateHexLattice.length }, (_, i) => (i + 1) / generateHexLattice.length)
+  }, [generateHexLattice])
+
+  const generateArrangedOpacities = useMemo(() => {
+    return [...generateLinearOpacities].sort((a, b) => a - b)
+  }, [generateLinearOpacities])
+
+  useEffect(() => {
+    const latticePositions = generateHexLattice
+    setDotPositions(latticePositions)
+    
+    // Create ordered indices for the dots
+    const orderedIndices = Array.from({ length: latticePositions.length }, (_, i) => i)
+    setDotIndices(orderedIndices)
+    
+    if (animateOrdering) {
+      // Start with ordered arrangement as thumbnail
+      setDotOpacities(generateArrangedOpacities)
+      setAnimationPhase('ordering-arranged')
+    } else {
+      setSelectedDots(centerHexagonDots)
+      setAnimationPhase('selected')
+    }
+  }, [animateOrdering])
+
+  const handleClick = () => {
+    if (onClick) onClick()
+    
+    if (!isAnimating) {
+      setIsAnimating(true)
+      
+      if (animateOrdering) {
+        // Start with fadeOut like filtering does
+        setAnimationPhase('fadeOut')
+        
+        setTimeout(() => {
+          // Set all dots dark before fade in
+          setDotOpacities(Array(dotPositions.length).fill(0.1))
+          setAnimationPhase('fadeIn')
+        }, 300)
+        
+        setTimeout(() => {
+          setAnimationPhase('initial')
+          setShowProgress(true)
+        }, 600)
+        
+        setTimeout(() => {
+          // Create shuffled uniform percentages from 0% to 100%
+          const shuffledOpacities = [...generateLinearOpacities].sort(() => Math.random() - 0.5)
+          setDotOpacities(shuffledOpacities)
+          
+          // Also shuffle positions so dots start in random locations
+          const shuffledPositions = [...generateHexLattice].sort(() => Math.random() - 0.5)
+          setDotPositions(shuffledPositions)
+        }, 1500)
+        
+        setTimeout(() => {
+          // Sort dots by their opacity and rearrange positions accordingly
+          const sortedByOpacity = dotOpacities
+            .map((opacity, index) => ({ opacity, originalIndex: index }))
+            .sort((a, b) => a.opacity - b.opacity)
+          
+          // Create new sorted opacities and positions arrays
+          const newOpacities = sortedByOpacity.map(item => item.opacity)
+          setDotOpacities(newOpacities)
+          setDotPositions(generateHexLattice)
+          setAnimationPhase('ordering-arranged')
+        }, 3000)
+        
+        setTimeout(() => {
+          setShowProgress(false)
+          setIsAnimating(false)
+        }, 3700)
+      } else {
+        setAnimationPhase('fadeOut')
+        
+        setTimeout(() => {
+          setAnimationPhase('fadeIn')
+        }, 300)
+        
+        setTimeout(() => {
+          setAnimationPhase('initial')
+          setShowProgress(true)
+        }, 600)
+        
+        setTimeout(() => {
+          setAnimationPhase('selected')
+        }, 1500)
+        
+        setTimeout(() => {
+          setAnimationPhase('filtered')
+        }, 3500)
+        
+        setTimeout(() => {
+          setShowProgress(false)
+          setAnimationPhase('selected')
+          setIsAnimating(false)
+        }, 4700)
+      }
+    }
   }
 
   return (
@@ -119,7 +185,6 @@ export default function HexagonLattice({
       onClick={handleClick}
       className="cursor-pointer"
     >
-      {/* Progress bar */}
       <line
         x1="50"
         y1="30"
@@ -136,9 +201,13 @@ export default function HexagonLattice({
         }}
       />
       
-      {generateHexLattice().map((dot, index) => {
+      {dotPositions.map((dot, index) => {
         const isSelected = selectedDots.has(index)
         const getFill = () => {
+          if (animateOrdering) {
+            const fillOpacity = dotOpacities[index] || 1
+            return `rgba(255, 255, 255, ${fillOpacity})`
+          }
           if (!animateFilter) return "hsl(var(--muted) / 0.1)"
           if (animationPhase === 'selected' && isSelected) return "white"
           if (animationPhase === 'filtered' && isSelected) return "white"
@@ -146,6 +215,11 @@ export default function HexagonLattice({
         }
         
         const getOpacity = () => {
+          if (animateOrdering) {
+            if (animationPhase === 'fadeOut') return 0
+            if (animationPhase === 'fadeIn') return 1
+            return 1 // Keep stroke always visible during movement
+          }
           if (!animateFilter) return 1
           if (animationPhase === 'fadeOut') return 0
           if (animationPhase === 'fadeIn') return 1
@@ -155,20 +229,22 @@ export default function HexagonLattice({
         }
         
         return (
-          <circle
-            key={index}
-            cx={dot.x}
-            cy={dot.y}
-            r={circleRadius}
-            fill={getFill()}
-            stroke="white"
-            strokeWidth={strokeWidth}
-            opacity={getOpacity()}
-            style={{
-              transition: 'fill 0.5s ease, opacity 0.5s ease'
-            }}
-          />
-        )
+			<circle
+				key={index}
+				cx={dot.x}
+				cy={dot.y}
+				r={circleRadius}
+				fill={getFill()}
+				stroke="white"
+				strokeWidth={1}
+				opacity={getOpacity()}
+				style={{
+					transition: animateOrdering
+						? "cx 1.5s ease, cy 1.5s ease, opacity 1s ease"
+						: "fill 0.5s ease, opacity 0.5s ease",
+				}}
+			/>
+		);
       })}
     </svg>
   )

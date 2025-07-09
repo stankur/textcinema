@@ -20,14 +20,25 @@ export default function Article() {
         
         <section className="mb-16">
           <div className="flex flex-col items-center space-y-8">
-            <div className="flex flex-col items-center space-y-4">
-              <HexagonLattice animateFilter={true} />
-              <h3 
-                className="text-lg font-medium cursor-pointer hover:text-gray-300"
-                onClick={() => window.location.href = '/blog/llm-for-making-complex-information-make-sense/filtering'}
-              >
-                Filtering
-              </h3>
+            <div className="flex flex-row items-center justify-center space-x-16">
+              <div className="flex flex-col items-center space-y-4">
+                <HexagonLattice animateFilter={true} />
+                <h3 
+                  className="text-lg font-medium cursor-pointer hover:text-gray-300"
+                  onClick={() => window.location.href = '/blog/llm-for-making-complex-information-make-sense/filtering'}
+                >
+                  Filtering
+                </h3>
+              </div>
+              <div className="flex flex-col items-center space-y-4">
+                <HexagonLattice animateOrdering={true} />
+                <h3 
+                  className="text-lg font-medium cursor-pointer hover:text-gray-300"
+                  onClick={() => window.location.href = '/blog/llm-for-making-complex-information-make-sense/ordering'}
+                >
+                  Ordering
+                </h3>
+              </div>
             </div>
           </div>
         </section>
