@@ -31,7 +31,7 @@ export default function HexagonLattice({
   const [showProgress, setShowProgress] = useState(false)
   const [dotPositions, setDotPositions] = useState<Array<{ x: number; y: number }>>([])
   const [dotOpacities, setDotOpacities] = useState<number[]>([])
-  const [dotIndices, setDotIndices] = useState<number[]>([])
+  const [isInitialClick, setIsInitialClick] = useState(true)
 
   const generateHexLattice = useMemo(() => {
     const dots: Array<{ x: number; y: number }> = []
@@ -86,9 +86,6 @@ export default function HexagonLattice({
     const latticePositions = generateHexLattice
     setDotPositions(latticePositions)
     
-    // Create ordered indices for the dots
-    const orderedIndices = Array.from({ length: latticePositions.length }, (_, i) => i)
-    setDotIndices(orderedIndices)
     
     if (animateOrdering) {
       // Start with ordered arrangement as thumbnail
@@ -114,11 +111,14 @@ export default function HexagonLattice({
           // Set all dots dark before fade in
           setDotOpacities(Array(dotPositions.length).fill(0.1))
           setAnimationPhase('fadeIn')
+          setIsInitialClick(true);
+
         }, 300)
         
         setTimeout(() => {
           setAnimationPhase('initial')
           setShowProgress(true)
+          setIsInitialClick(false);
         }, 600)
         
         setTimeout(() => {
@@ -147,7 +147,7 @@ export default function HexagonLattice({
         setTimeout(() => {
           setShowProgress(false)
           setIsAnimating(false)
-        }, 3700)
+        }, 4500)
       } else {
         setAnimationPhase('fadeOut')
         
@@ -217,7 +217,7 @@ export default function HexagonLattice({
         const getOpacity = () => {
           if (animateOrdering) {
             if (animationPhase === 'fadeOut') return 0
-            if (animationPhase === 'fadeIn') return 1
+            if (animationPhase === 'fadeIn') return 0
             return 1 // Keep stroke always visible during movement
           }
           if (!animateFilter) return 1
@@ -236,11 +236,13 @@ export default function HexagonLattice({
 				r={circleRadius}
 				fill={getFill()}
 				stroke="white"
-				strokeWidth={1}
+				strokeWidth={strokeWidth}
 				opacity={getOpacity()}
 				style={{
 					transition: animateOrdering
-						? "cx 1.5s ease, cy 1.5s ease, opacity 1s ease"
+						? isInitialClick
+							? "cx 1.5s ease, cy 1.5s ease, opacity 1s ease"
+							: "cx 1.5s ease, cy 1.5s ease, opacity 1s ease, fill 1s ease"
 						: "fill 0.5s ease, opacity 0.5s ease",
 				}}
 			/>
