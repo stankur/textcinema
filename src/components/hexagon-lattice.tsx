@@ -1,6 +1,38 @@
 "use client"
 
 import { useState, useEffect, useMemo } from "react"
+import { 
+  FilteringState, 
+  centerHexagonDots, 
+  getFilteringFill, 
+  getFilteringOpacity, 
+  runFilteringAnimation 
+} from "./animations/filtering"
+import { 
+  OrderingState, 
+  generateLinearOpacities, 
+  generateArrangedOpacities, 
+  getOrderingFill, 
+  getOrderingOpacity, 
+  getOrderingTransition, 
+  runOrderingAnimation 
+} from "./animations/ordering"
+import { 
+  ClusteringState, 
+  getClusteringConfiguration, 
+  getClusteringFill, 
+  getClusteringOpacity, 
+  getClusteringTransition, 
+  runClusteringAnimation 
+} from "./animations/clustering"
+import { 
+  EnrichingState, 
+  generateFineHexLattice, 
+  getEnrichingFill, 
+  getEnrichingOpacity, 
+  getEnrichingTransition, 
+  runEnrichingAnimation 
+} from "./animations/enriching"
 
 interface HexagonLatticeProps {
   width?: number
@@ -11,27 +43,33 @@ interface HexagonLatticeProps {
   strokeWidth?: number
   animateFilter?: boolean
   animateOrdering?: boolean
+  animateClustering?: boolean
+  animateEnriching?: boolean
   onClick?: () => void
 }
 
 export default function HexagonLattice({
-  width = 300,
-  height = 300,
+  width = 250,
+  height = 250,
   spacing = 25,
   rowCounts = [4, 5, 6, 7, 6, 5, 4],
   circleRadius = 6,
   strokeWidth = 0.5,
   animateFilter = false,
   animateOrdering = false,
+  animateClustering = false,
+  animateEnriching = false,
   onClick
 }: HexagonLatticeProps) {
   const [selectedDots, setSelectedDots] = useState<Set<number>>(new Set())
-  const [animationPhase, setAnimationPhase] = useState<'initial' | 'selected' | 'filtered' | 'reset' | 'fadeOut' | 'fadeIn' | 'ordering-random' | 'ordering-arranged'>('selected')
+  const [animationPhase, setAnimationPhase] = useState<FilteringState['animationPhase'] | OrderingState['animationPhase'] | ClusteringState['animationPhase'] | EnrichingState['animationPhase']>('selected')
   const [isAnimating, setIsAnimating] = useState(false)
   const [showProgress, setShowProgress] = useState(false)
   const [dotPositions, setDotPositions] = useState<Array<{ x: number; y: number }>>([])
   const [dotOpacities, setDotOpacities] = useState<number[]>([])
+  const [dotColors, setDotColors] = useState<string[]>([])
   const [isInitialClick, setIsInitialClick] = useState(true)
+  const [currentCircleRadius, setCurrentCircleRadius] = useState(circleRadius)
 
   const generateHexLattice = useMemo(() => {
     const dots: Array<{ x: number; y: number }> = []
@@ -52,50 +90,47 @@ export default function HexagonLattice({
     return dots
   }, [width, height, spacing, rowCounts])
 
-  const centerHexagonDots = useMemo(() => {
-    const selected = new Set<number>()
-    
-    let dotIndex = 0
-    rowCounts.forEach((count, rowIndex) => {
-      if (rowIndex === 2) {
-        selected.add(dotIndex + 2)
-        selected.add(dotIndex + 3)
-      } else if (rowIndex === 3) {
-        selected.add(dotIndex + 2)
-        selected.add(dotIndex + 3)
-        selected.add(dotIndex + 4)
-      } else if (rowIndex === 4) {
-        selected.add(dotIndex + 2)
-        selected.add(dotIndex + 3)
-      }
-      dotIndex += count
-    })
-    
-    return selected
+  const centerHexagonDotsSet = useMemo(() => {
+    return centerHexagonDots(rowCounts)
   }, [rowCounts])
 
-  const generateLinearOpacities = useMemo(() => {
-    return Array.from({ length: generateHexLattice.length }, (_, i) => (i + 1) / (generateHexLattice.length))
-  }, [generateHexLattice])
+  const linearOpacities = useMemo(() => {
+    return generateLinearOpacities(generateHexLattice.length)
+  }, [generateHexLattice.length])
 
-  const generateArrangedOpacities = useMemo(() => {
-    return [...generateLinearOpacities].sort((a, b) => a - b)
-  }, [generateLinearOpacities])
+  const arrangedOpacities = useMemo(() => {
+    return generateArrangedOpacities(linearOpacities)
+  }, [linearOpacities])
+
+  const clusteringConfiguration = useMemo(() => {
+    return getClusteringConfiguration(generateHexLattice, rowCounts)
+  }, [generateHexLattice, rowCounts])
+
+  const fineHexLattice = useMemo(() => {
+    const fineSpacing = spacing / 2
+    const fineRowCounts = [8, 10, 12, 14, 12, 10, 8]
+    return generateFineHexLattice(width, height, fineSpacing, fineRowCounts)
+  }, [width, height, spacing])
 
   useEffect(() => {
     const latticePositions = generateHexLattice
     setDotPositions(latticePositions)
     
-    
     if (animateOrdering) {
-      // Start with ordered arrangement as thumbnail
-      setDotOpacities(generateArrangedOpacities)
+      setDotOpacities(arrangedOpacities)
       setAnimationPhase('ordering-arranged')
+    } else if (animateClustering) {
+      setDotColors(clusteringConfiguration)
+      setAnimationPhase('clustering-arranged')
+    } else if (animateEnriching) {
+      setDotPositions(fineHexLattice)
+      setCurrentCircleRadius(3)
+      setAnimationPhase('enriching-fine')
     } else {
-      setSelectedDots(centerHexagonDots)
+      setSelectedDots(centerHexagonDotsSet)
       setAnimationPhase('selected')
     }
-  }, [animateOrdering])
+  }, [animateOrdering, animateClustering, animateEnriching])
 
   const handleClick = () => {
     if (onClick) onClick()
@@ -104,78 +139,47 @@ export default function HexagonLattice({
       setIsAnimating(true)
       
       if (animateOrdering) {
-        // Start with fadeOut like filtering does
-        setAnimationPhase('fadeOut')
-        
-        setTimeout(() => {
-          // Set all dots dark before fade in
-          setDotOpacities(Array(dotPositions.length).fill(0.1))
-          setAnimationPhase('fadeIn')
-          setIsInitialClick(true);
-
-        }, 300)
-        
-        setTimeout(() => {
-          setAnimationPhase('initial')
-          setShowProgress(true)
-          setIsInitialClick(false);
-        }, 600)
-        
-        let shuffledOpacitiesRef: number[]
-        
-        setTimeout(() => {
-          // Create shuffled uniform percentages from 0% to 100%
-          shuffledOpacitiesRef = [...generateLinearOpacities].sort(() => Math.random() - 0.5)
-          setDotOpacities(shuffledOpacitiesRef)
-        }, 1500)
-        
-        setTimeout(() => {
-          // Create mapping: index -> hexLatticePosition
-          const indexToHexPosition = generateHexLattice
-          
-          // Create mapping: opacityIndex -> sortedOpacityIndex using the stored shuffled values
-          const opacityWithIndex = shuffledOpacitiesRef.map((opacity, index) => ({ opacity, index }))
-          opacityWithIndex.sort((a, b) => a.opacity - b.opacity)
-          
-          // Create new positions: opacityIndex -> sortedOpacityIndex -> hexLatticePosition
-          const newPositions = shuffledOpacitiesRef.map((_, dotIndex) => {
-            const sortedIndex = opacityWithIndex.findIndex(item => item.index === dotIndex)
-            return indexToHexPosition[sortedIndex]
-          })
-          
-          setDotPositions(newPositions)
-          setAnimationPhase('ordering-arranged')
-        }, 3000)
-        
-        setTimeout(() => {
-          setShowProgress(false)
-          setIsAnimating(false)
-        }, 4500)
+        runOrderingAnimation(
+          setAnimationPhase,
+          setShowProgress,
+          setIsAnimating,
+          setDotOpacities,
+          setDotPositions,
+          setIsInitialClick,
+          dotPositions,
+          linearOpacities,
+          generateHexLattice
+        )
+      } else if (animateClustering) {
+        runClusteringAnimation(
+          setAnimationPhase,
+          setShowProgress,
+          setIsAnimating,
+          setDotColors,
+          setDotPositions,
+          setIsInitialClick,
+          dotPositions,
+          generateHexLattice,
+          rowCounts
+        )
+      } else if (animateEnriching) {
+        runEnrichingAnimation(
+          setAnimationPhase,
+          setShowProgress,
+          setIsAnimating,
+          setDotPositions,
+          setIsInitialClick,
+          setCurrentCircleRadius,
+          generateHexLattice,
+          fineHexLattice
+        )
       } else {
-        setAnimationPhase('fadeOut')
-        
-        setTimeout(() => {
-          setAnimationPhase('fadeIn')
-        }, 300)
-        
-        setTimeout(() => {
-          setAnimationPhase('initial')
-          setShowProgress(true)
-        }, 600)
-        
-        setTimeout(() => {
-          setAnimationPhase('selected')
-        }, 1500)
-        
-        setTimeout(() => {
-          setAnimationPhase('filtered')
-        }, 3500)
-        
-        setTimeout(() => {
-          setShowProgress(false)
-          setAnimationPhase('selected')
-          setIsAnimating(false)
-        }, 4700)
+        runFilteringAnimation(
+          setAnimationPhase,
+          setShowProgress,
+          setIsAnimating,
+          dotPositions
+        )
       }
     }
   }
@@ -187,48 +191,65 @@ export default function HexagonLattice({
       viewBox={`0 0 ${width} ${height}`}
       onClick={handleClick}
       className="cursor-pointer"
-    >
+    >{ false && /* This is a placeholder for the progress line, currently not used */
       <line
-        x1="50"
-        y1="30"
-        x2="250"
-        y2="30"
-        stroke="white"
-        strokeWidth="2"
-        strokeDasharray="200"
-        strokeDashoffset="200"
+        x1="40"
+        y1="230"
+        x2="210"
+        y2="230"
+        stroke="rgba(255, 255, 255, 0.3)"
+        strokeWidth="1"
+        strokeDasharray="170"
+        strokeDashoffset="170"
         opacity={showProgress ? 1 : 0}
         style={{
           transition: showProgress ? 'stroke-dashoffset 4.1s linear, opacity 0.3s ease' : 'opacity 0.3s ease',
-          strokeDashoffset: showProgress ? "0" : "200"
+          strokeDashoffset: showProgress ? "0" : "170"
         }}
-      />
+      />}
       
       {dotPositions.map((dot, index) => {
         const isSelected = selectedDots.has(index)
         const getFill = () => {
           if (animateOrdering) {
             const fillOpacity = dotOpacities[index] || 1
-            return `rgba(255, 255, 255, ${fillOpacity})`
+            return getOrderingFill(fillOpacity)
+          }
+          if (animateClustering) {
+            return getClusteringFill(dotColors[index] || 'rgba(255, 255, 255, 0.1)')
+          }
+          if (animateEnriching) {
+            return getEnrichingFill()
           }
           if (!animateFilter) return "hsl(var(--muted) / 0.1)"
-          if (animationPhase === 'selected' && isSelected) return "white"
-          if (animationPhase === 'filtered' && isSelected) return "white"
-          return "hsl(var(--muted) / 0.1)"
+          return getFilteringFill(animationPhase as FilteringState['animationPhase'], isSelected)
         }
         
         const getOpacity = () => {
           if (animateOrdering) {
-            if (animationPhase === 'fadeOut') return 0
-            if (animationPhase === 'fadeIn') return 0
-            return 1 // Keep stroke always visible during movement
+            return getOrderingOpacity(animationPhase as OrderingState['animationPhase'])
+          }
+          if (animateClustering) {
+            return getClusteringOpacity(animationPhase as ClusteringState['animationPhase'])
+          }
+          if (animateEnriching) {
+            return getEnrichingOpacity(animationPhase as EnrichingState['animationPhase'])
           }
           if (!animateFilter) return 1
-          if (animationPhase === 'fadeOut') return 0
-          if (animationPhase === 'fadeIn') return 1
-          if (animationPhase === 'filtered' && !isSelected) return 0
-          if (animationPhase === 'reset') return 1
-          return 1
+          return getFilteringOpacity(animationPhase as FilteringState['animationPhase'], isSelected)
+        }
+        
+        const getTransition = () => {
+          if (animateOrdering) {
+            return getOrderingTransition(isInitialClick)
+          }
+          if (animateClustering) {
+            return getClusteringTransition(isInitialClick)
+          }
+          if (animateEnriching) {
+            return getEnrichingTransition(isInitialClick)
+          }
+          return "fill 0.5s ease, opacity 0.5s ease"
         }
         
         return (
@@ -236,17 +257,13 @@ export default function HexagonLattice({
 				key={index}
 				cx={dot.x}
 				cy={dot.y}
-				r={circleRadius}
+				r={currentCircleRadius}
 				fill={getFill()}
 				stroke="white"
 				strokeWidth={strokeWidth}
 				opacity={getOpacity()}
 				style={{
-					transition: animateOrdering
-						? isInitialClick
-							? "cx 1.5s ease, cy 1.5s ease, opacity 1s ease"
-							: "cx 1.5s ease, cy 1.5s ease, opacity 1s ease, fill 1s ease"
-						: "fill 0.5s ease, opacity 0.5s ease",
+					transition: getTransition(),
 				}}
 			/>
 		);

@@ -20,7 +20,7 @@ export default function Article() {
         
         <section className="mb-16">
           <div className="flex flex-col items-center space-y-8">
-            <div className="flex flex-row items-center justify-center space-x-16">
+            <div className="flex flex-wrap items-center justify-center gap-8 ">
               <div className="flex flex-col items-center space-y-4">
                 <HexagonLattice animateFilter={true} />
                 <h3 
@@ -37,6 +37,24 @@ export default function Article() {
                   onClick={() => window.location.href = '/blog/llm-for-making-complex-information-make-sense/ordering'}
                 >
                   Ordering
+                </h3>
+              </div>
+              <div className="flex flex-col items-center space-y-4">
+                <HexagonLattice animateClustering={true} />
+                <h3 
+                  className="text-lg font-medium cursor-pointer hover:text-gray-300"
+                  onClick={() => window.location.href = '/blog/llm-for-making-complex-information-make-sense/clustering'}
+                >
+                  Clustering
+                </h3>
+              </div>
+              <div className="flex flex-col items-center space-y-4">
+                <HexagonLattice animateEnriching={true} />
+                <h3 
+                  className="text-lg font-medium cursor-pointer hover:text-gray-300"
+                  onClick={() => window.location.href = '/blog/llm-for-making-complex-information-make-sense/enriching'}
+                >
+                  Enriching
                 </h3>
               </div>
             </div>
