@@ -48,8 +48,7 @@ export const getFilteringOpacity = (
 export const runFilteringAnimation = (
   setAnimationPhase: (phase: FilteringState['animationPhase']) => void,
   setShowProgress: (show: boolean) => void,
-  setIsAnimating: (animating: boolean) => void,
-  dotPositions: Array<{ x: number; y: number }>
+  setIsAnimating: (animating: boolean) => void
 ) => {
   setAnimationPhase('fadeOut')
   

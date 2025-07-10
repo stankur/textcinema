@@ -28,8 +28,85 @@ export const generateFineHexLattice = (
   return dots
 }
 
-export const getEnrichingFill = () => {
-  return "rgba(255, 255, 255, 0.8)"
+export const generateThreeLayerLattice = (
+  basePositions: Array<{ x: number; y: number }>,
+  spacing: number = 25
+) => {
+  const allPositions: Array<{ x: number; y: number; color: string }> = []
+  
+  // Safety check
+  if (!basePositions || !Array.isArray(basePositions)) {
+    return allPositions
+  }
+  
+  // Half neighboring lattice distance for hexagonal grid pattern
+  const halfSpacing = spacing / 2
+  const hexOffset = halfSpacing * Math.sqrt(3) / 2 // hexagonal vertical offset
+  
+  // Create three layers with hexagonal grid offsets
+  basePositions.forEach((pos) => {
+    // Cyan layer (stay in place)
+    allPositions.push({
+		x: pos.x - halfSpacing / 2,
+		y: pos.y - hexOffset / 2,
+		color: "rgba(0, 0, 0, 0.7)", // cyan
+	});
+    
+    // Magenta layer (right horizontally)
+    allPositions.push({
+		x: pos.x + (halfSpacing / 2)  - halfSpacing / 2,
+		y: pos.y - hexOffset / 2,
+		color: "rgba(0, 0, 0, 0.7)", // magenta
+	});
+    
+    // Yellow layer (right-up diagonally - hexagonal pattern)
+    allPositions.push({
+		x: pos.x + (halfSpacing / 4)  - (halfSpacing / 2) ,
+		y: pos.y - (hexOffset / 2)  - (hexOffset / 2) ,
+		color: "rgba(0, 0, 0, 0.7)", // yellow
+	});
+  })
+  
+  return allPositions
+}
+
+export const generateAlignedThreeLayerLattice = (
+  basePositions: Array<{ x: number; y: number }>
+) => {
+  const allPositions: Array<{ x: number; y: number; color: string }> = []
+  
+  // Safety check
+  if (!basePositions || !Array.isArray(basePositions)) {
+    return allPositions
+  }
+  
+  // Create three overlapping lattices with NO offset (all aligned)
+  basePositions.forEach((pos) => {
+    // All three layers at same position, very low opacity (0.1/3)
+    allPositions.push({
+      x: pos.x,
+      y: pos.y,
+      color: 'rgba(6, 182, 212, 0.033)' // very dark cyan (0.1/3)
+    })
+    
+    allPositions.push({
+      x: pos.x,
+      y: pos.y,
+      color: 'rgba(236, 72, 153, 0.033)' // very dark magenta (0.1/3)
+    })
+    
+    allPositions.push({
+      x: pos.x,
+      y: pos.y,
+      color: 'rgba(234, 179, 8, 0.033)' // very dark yellow (0.1/3)
+    })
+  })
+  
+  return allPositions
+}
+
+export const getEnrichingFill = (color?: string) => {
+  return color || "rgba(255, 255, 255, 0.8)"
 }
 
 export const getEnrichingOpacity = (
@@ -42,8 +119,8 @@ export const getEnrichingOpacity = (
 
 export const getEnrichingTransition = (isInitialClick: boolean) => {
   return isInitialClick
-    ? "cx 1.5s ease, cy 1.5s ease, opacity 1s ease, r 1s ease"
-    : "cx 1.5s ease, cy 1.5s ease, opacity 1s ease, fill 1s ease, r 1s ease"
+    ? ""  // No position animation on initial click, but include fill for opacity
+    : "opacity 1s ease, r 1s ease, cx 1s ease, cy 1s ease, fill 1s ease"  // Position and opacity animation during splitting
 }
 
 export const runEnrichingAnimation = (
@@ -51,22 +128,27 @@ export const runEnrichingAnimation = (
   setShowProgress: (show: boolean) => void,
   setIsAnimating: (animating: boolean) => void,
   setDotPositions: (positions: Array<{ x: number; y: number }>) => void,
+  setDotColors: (colors: string[]) => void,
   setIsInitialClick: (initial: boolean) => void,
   setCircleRadius: (radius: number) => void,
-  coarsePositions: Array<{ x: number; y: number }>,
-  finePositions: Array<{ x: number; y: number }>
+  basePositions: Array<{ x: number; y: number }>
 ) => {
   setAnimationPhase('fadeOut')
   
   setTimeout(() => {
+    // Start with aligned dark layers
+    const alignedLayers = generateAlignedThreeLayerLattice(basePositions)
+    setDotPositions(alignedLayers.map(p => ({ x: p.x, y: p.y })))
+    setDotColors(alignedLayers.map(p => p.color))
+    setCircleRadius(6)
     setAnimationPhase('fadeIn')
-    setIsInitialClick(true)
+    setIsInitialClick(true)  // No position animation for initial setup
   }, 300)
   
   setTimeout(() => {
     setAnimationPhase('initial')
     setShowProgress(true)
-    setIsInitialClick(false)
+    setIsInitialClick(false)  // Enable position animations for splitting
   }, 600)
   
   setTimeout(() => {
@@ -74,9 +156,11 @@ export const runEnrichingAnimation = (
   }, 1500)
   
   setTimeout(() => {
-    // Transition to fine grid
-    setDotPositions(finePositions)
-    setCircleRadius(3)
+    // Split into offset layers with bright colors
+    const offsetLayers = generateThreeLayerLattice(basePositions, 25) // Pass spacing parameter
+    setDotPositions(offsetLayers.map(p => ({ x: p.x, y: p.y })))
+    setDotColors(offsetLayers.map(p => p.color))
+    setCircleRadius(4)
     setAnimationPhase('enriching-fine')
   }, 3000)
   

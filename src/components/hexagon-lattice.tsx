@@ -27,7 +27,7 @@ import {
 } from "./animations/clustering"
 import { 
   EnrichingState, 
-  generateFineHexLattice, 
+  generateThreeLayerLattice,
   getEnrichingFill, 
   getEnrichingOpacity, 
   getEnrichingTransition, 
@@ -106,11 +106,6 @@ export default function HexagonLattice({
     return getClusteringConfiguration(generateHexLattice, rowCounts)
   }, [generateHexLattice, rowCounts])
 
-  const fineHexLattice = useMemo(() => {
-    const fineSpacing = spacing / 2
-    const fineRowCounts = [8, 10, 12, 14, 12, 10, 8]
-    return generateFineHexLattice(width, height, fineSpacing, fineRowCounts)
-  }, [width, height, spacing])
 
   useEffect(() => {
     const latticePositions = generateHexLattice
@@ -123,8 +118,10 @@ export default function HexagonLattice({
       setDotColors(clusteringConfiguration)
       setAnimationPhase('clustering-arranged')
     } else if (animateEnriching) {
-      setDotPositions(fineHexLattice)
-      setCurrentCircleRadius(3)
+      const offsetLayers = generateThreeLayerLattice(generateHexLattice, spacing)
+      setDotPositions(offsetLayers.map(p => ({ x: p.x, y: p.y })))
+      setDotColors(offsetLayers.map(p => p.color))
+      setCurrentCircleRadius(4)
       setAnimationPhase('enriching-fine')
     } else {
       setSelectedDots(centerHexagonDotsSet)
@@ -168,17 +165,16 @@ export default function HexagonLattice({
           setShowProgress,
           setIsAnimating,
           setDotPositions,
+          setDotColors,
           setIsInitialClick,
           setCurrentCircleRadius,
-          generateHexLattice,
-          fineHexLattice
+          generateHexLattice
         )
       } else {
         runFilteringAnimation(
           setAnimationPhase,
           setShowProgress,
-          setIsAnimating,
-          dotPositions
+          setIsAnimating
         )
       }
     }
@@ -219,7 +215,7 @@ export default function HexagonLattice({
             return getClusteringFill(dotColors[index] || 'rgba(255, 255, 255, 0.1)')
           }
           if (animateEnriching) {
-            return getEnrichingFill()
+            return getEnrichingFill(dotColors[index])
           }
           if (!animateFilter) return "hsl(var(--muted) / 0.1)"
           return getFilteringFill(animationPhase as FilteringState['animationPhase'], isSelected)
